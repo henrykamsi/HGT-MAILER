@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HGT Miller - Easy Email Delivery</title>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-green: #2D5A27;
+            --primary-light: #44803B;
+            --primary-dark: #1B3B18;
+            --bg-color: #F8F9FA;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #CCCCCC;
+            --error-red: #D9534F;
+            --tag-blue: #007BFF;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+        .hidden { display: none !important; }
+
+        /* --- Splash Screen --- */
+        #splash-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #FFFFFF; z-index: 9999; display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .splash-content { text-align: center; }
+        .logo-box { width: 80px; height: 80px; margin: 0 auto 20px auto; display: flex; justify-content: center; align-items: center; background: #EBF2EB; border-radius: 50%; }
+        .logo-box i { font-size: 2.5rem; color: var(--primary-green); }
+        .logo-text { font-size: 2.5rem; font-weight: 800; color: #111111; }
+        .logo-text span { color: var(--primary-green); }
+
+        /* --- Loading Spinner Overlay --- */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(255, 255, 255, 0.9); z-index: 9000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .spinner-ring {
+            width: 60px; height: 60px; border: 5px solid #EBF2EB; border-top: 5px solid var(--primary-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading-text { font-size: 1.2rem; font-weight: 600; color: var(--primary-dark); }
+
+        /* --- Alert Popup Box --- */
+        #popup-modal {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.4); z-index: 8000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--card-bg); padding: 25px; border-radius: 12px; max-width: 400px; width: 90%;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-content h3 { font-size: 1.3rem; margin-bottom: 10px; color: var(--primary-dark); }
+        .modal-content p { color: var(--text-muted); margin-bottom: 20px; font-size: 1rem; line-height: 1.4; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+        /* --- Buttons & Inputs --- */
+        .btn-primary { background: var(--primary-green); color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-outline { background: transparent; color: var(--text-main); border: 1.5px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; }
+        .btn-outline:hover { border-color: var(--primary-green); color: var(--primary-green); }
+        .btn-text { background: none; border: none; color: var(--primary-green); cursor: pointer; font-weight: 600; text-decoration: underline; }
+        input, textarea { width: 100%; padding: 14px; border: 1.5px solid var(--border-color); border-radius: 8px; font-size: 1rem; margin-bottom: 15px; }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.1); }
+        .error-msg { background: #FDF3F2; color: var(--error-red); padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid #F5D2D0; font-weight: 500; }
+
+        /* --- Sign Up / Login Forms Screen --- */
+        #auth-section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: #F4F7F4; }
+        .auth-card { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); overflow: hidden; }
+        .auth-header { display: flex; background: #EBF2EB; }
+        .auth-tab { flex: 1; padding: 15px; background: none; border: none; font-size: 1.1rem; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+        .auth-tab.active { color: var(--primary-green); background: var(--card-bg); border-bottom: 3px solid var(--primary-green); }
+        .auth-body { padding: 25px; }
+        .auth-footer { margin-top: 20px; font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+
+        /* --- Dashboard Screen Layout --- */
+        #app-section { display: flex; flex-direction: column; min-height: 100vh; }
+        .app-header { background: var(--card-bg); padding: 15px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        .app-header h2 { color: var(--primary-green); font-weight: 800; }
+        .app-content { padding: 20px; flex: 1; max-width: 600px; width: 100%; margin: 0 auto; padding-bottom: 90px; }
+
+        .info-banner { background: #EAF4EA; color: var(--primary-green); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; text-align: center; font-size: 0.95rem; }
+        .dashboard-card, .composer-card, .settings-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+        .dashboard-card h3, .settings-card h3 { margin-bottom: 15px; color: var(--primary-dark); }
+        
+        /* Circular Usage Graphic */
+        .progress-box { display: flex; justify-content: center; margin: 15px 0; }
+        .circle-progress { width: 120px; height: 120px; border-radius: 50%; background: conic-gradient(var(--primary-green) 0%, #EBF2EB 0%); display: flex; justify-content: center; align-items: center; }
+        .circle-progress span { background: var(--card-bg); width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 1.1rem; }
+        
+        #history-list { list-style: none; }
+        #history-list li { padding: 12px 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        #history-list li:last-child { border-bottom: none; }
+
+        /* Recipient Tag Input + Button Layout */
+        .input-group { display: flex; gap: 8px; margin-bottom: 5px; }
+        .input-group input { margin-bottom: 0; flex: 1; }
+        .btn-add { width: auto; padding: 0 20px; white-space: nowrap; background: #333333; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-add:hover { background: #555555; }
+        
+        .tag-display-box { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; min-height: 50px; background: #FAFAFA; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
+        .email-tag { background: var(--tag-blue); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+        .email-tag i { cursor: pointer; }
+        .count-text { font-size: 0.85rem; color: var(--text-muted); font-weight: bold; display: block; margin-bottom: 15px; }
+
+        /* Settings Style */
+        .settings-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .btn-danger { background: var(--error-red); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-danger:hover { background: #C9302C; }
+        .btn-secondary { background: #555555; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        /* Bottom Navigation Bar */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+        .nav-item { text-decoration: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; font-size: 0.85rem; gap: 4px; font-weight: bold; }
+        .nav-item i { font-size: 1.2rem; }
+        .nav-item.active { color: var(--primary-green); }
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen Animation -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="logo-box"><i class="fas fa-paper-plane"></i></div>
+            <h1 class="logo-text">HGT <span>Miller</span></h1>
+        </div>
+    </div>
+
+    <!-- Universal Circular Loading Screen -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner-ring"></div>
+        <p id="loading-text">Please wait...</p>
+    </div>
+
+    <!-- Alert Dialog Box -->
+    <div id="popup-modal" class="hidden">
+        <div class="modal-content">
+            <h3 id="popup-title">Message</h3>
+            <p id="popup-message"></p>
+            <div id="popup-actions" class="modal-actions"></div>
+        </div>
+    </div>
+
+    <!-- Authentication Area (Sign Up / Login) -->
+    <div id="auth-section">
+        <div class="auth-card">
+            <div class="auth-header">
+                <button id="tab-signup" class="auth-tab active">Sign Up</button>
+                <button id="tab-login" class="auth-tab">Login</button>
+            </div>
+            <div class="auth-body">
+                <div id="auth-error" class="error-msg hidden"></div>
+                
+                <!-- Simple Registration Form -->
+                <form id="signup-form">
+                    <input type="text" id="su-name" placeholder="First Name" required>
+                    <input type="text" id="su-surname" placeholder="Surname" required>
+                    <input type="text" id="su-country" placeholder="Country" required>
+                    <input type="number" id="su-age" placeholder="Age" required>
+                    <input type="email" id="su-email" placeholder="Email Address" required>
+                    <input type="password" id="su-password" placeholder="Password (Minimum 6 letters/numbers)" required minlength="6">
+                    <input type="password" id="su-confirm" placeholder="Confirm Password" required minlength="6">
+                    <button type="submit" class="btn-primary">Create My Account</button>
+                    <button type="button" id="btn-google-su" class="btn-outline" style="margin-top: 10px;"><i class="fab fa-google"></i> Continue with Google</button>
+                </form>
+
+                <!-- Simple Login Form -->
+                <form id="login-form" class="hidden">
+                    <input type="email" id="li-email" placeholder="Email Address" required>
+                    <input type="password" id="li-password" placeholder="Password" required>
+                    <button type="submit" class="btn-primary">Log Me In</button>
+                    <button type="button" id="btn-google-li" class="btn-outline" style="margin-top: 10px;"><i class="fab fa-google"></i> Login with Google</button>
+                    <button type="button" id="forgot-password-link" class="btn-text" style="margin-top: 15px; width: 100%; text-align: center;">Forgot Password?</button>
+                </form>
+
+                <!-- Simple Password Reset Form -->
+                <form id="forgot-form" class="hidden">
+                    <p style="margin-bottom:15px; font-size:0.95rem; color:var(--text-muted);">Enter your email address and we will send you a link to reset your password.</p>
+                    <input type="email" id="fp-email" placeholder="Email Address" required>
+                    <button type="submit" class="btn-primary">Send Reset Link</button>
+                    <button type="button" id="btn-back-login" class="btn-text" style="margin-top: 15px; width: 100%; text-align: center;">Back to Login</button>
+                </form>
+            </div>
+        </div>
+        <footer class="auth-footer">&copy; 2026 Henry Global Tech.</footer>
+    </div>
+
+    <!-- Main Dashboard Area -->
+    <div id="app-section" class="hidden">
+        <header class="app-header">
+            <h2>HGT Miller</h2>
+        </header>
+
+        <main class="app-content">
+            <!-- Tab 1: Stats & History -->
+            <div id="view-dashboard" class="app-view">
+                <div class="info-banner">You can send up to 300 emails every day.</div>
+                <div class="dashboard-card">
+                    <h3 style="text-align: center;">Today's Email Usage</h3>
+                    <div class="progress-box">
+                        <div class="circle-progress" id="usage-chart">
+                            <span id="usage-text">0 / 300</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-card">
+                    <h3>Recent Sent Emails</h3>
+                    <ul id="history-list"></ul>
+                </div>
+            </div>
+
+            <!-- Tab 2: Send Email Composer -->
+            <div id="view-push" class="app-view hidden">
+                <div class="composer-card">
+                    <input type="email" id="sender-email" placeholder="Your Verified Brevo Sender Email" required>
+                    <input type="text" id="email-title" placeholder="Email Subject / Title" required>
+                    <input type="text" id="email-desc" placeholder="Short Subtitle or Note (Optional)">
+                    
+                    <!-- Fixed Recipient Tagging Row -->
+                    <div class="input-group">
+                        <input type="email" id="tag-input" placeholder="Type recipient email here...">
+                        <button type="button" id="btn-add-tag" class="btn-add">Add</button>
+                    </div>
+                    <div class="tag-display-box" id="tag-container"></div>
+                    <small id="recipient-count" class="count-text">0 Recipients Added</small>
+
+                    <textarea id="email-body" placeholder="Type your email message here..." style="height: 150px; resize: none;"></style></textarea>
+                    <button id="btn-send-email" class="btn-primary" style="font-size:1.1rem; padding:16px;"><i class="fas fa-paper-plane"></i> Send Out Emails Now</button>
+                </div>
+            </div>
+
+            <!-- Tab 3: Settings -->
+            <div id="view-settings" class="app-view hidden">
+                <div class="settings-card">
+                    <h3>Brevo API Configuration</h3>
+                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:12px;">Paste your Brevo API key below so your application can route messages.</p>
+                    <input type="password" id="brevo-api-key" placeholder="Enter your Brevo v3 API Key">
+                    <button id="btn-save-api" class="btn-primary" style="margin-bottom: 10px;">Save API Key</button>
+                    <button id="btn-test-api" class="btn-outline">Test Key Connection</button>
+                    
+                    <div class="settings-actions">
+                        <a href="https://app.brevo.com/settings/keys/smtp" target="_blank" style="text-align:center; color:var(--primary-green); font-weight:bold; margin: 10px 0;">Get your API key from Brevo <i class="fas fa-external-link-alt"></i></a>
+                        <button id="btn-signout" class="btn-secondary"><i class="fas fa-power-off"></i> Log Out</button>
+                        <button id="btn-delete-account" class="btn-danger"><i class="fas fa-trash-alt"></i> Delete My Account Permanently</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation Controls -->
+        <nav class="bottom-nav">
+            <a href="#dashboard" class="nav-item active" data-target="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Metrics</span>
+            </a>
+            <a href="#push" class="nav-item" data-target="push">
+                <i class="fas fa-envelope"></i>
+                <span>Send Email</span>
+            </a>
+            <a href="#settings" class="nav-item" data-target="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Core Scripts Handling Database, Auth, and Layout Realization -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Your exact app configurations
+        const firebaseConfig = {
+          apiKey: "AIzaSyB2J9FWWUBmeESQIn1-MwquYCouoRZoAdk",
+          authDomain: "htg-1d5f8.firebaseapp.com",
+          projectId: "htg-1d5f8",
+          storageBucket: "htg-1d5f8.firebasestorage.app",
+          messagingSenderId: "1029699944685",
+          appId: "1:1029699944685:web:e7bff9fa7067ee58f2cce4",
+          measurementId: "G-3KHWW6RXXP"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let userData = null;
+        let emailTagsArray = [];
+        const DAILY_LIMIT = 300;
+
+        // UI Element Selectors
+        const ui = {
+            splash: document.getElementById('splash-screen'),
+            authSec: document.getElementById('auth-section'),
+            appSec: document.getElementById('app-section'),
+            overlay: document.getElementById('loading-overlay'),
+            loadText: document.getElementById('loading-text'),
+            modal: document.getElementById('popup-modal'),
+            modalTitle: document.getElementById('popup-title'),
+            modalMsg: document.getElementById('popup-message'),
+            modalActs: document.getElementById('popup-actions'),
+            errArea: document.getElementById('auth-error'),
+            tagIn: document.getElementById('tag-input'),
+            tagBtn: document.getElementById('btn-add-tag'),
+            tagBox: document.getElementById('tag-container'),
+            cntOut: document.getElementById('recipient-count')
+        };
+
+        const showLoading = (text) => { ui.loadText.innerText = text; ui.overlay.classList.remove('hidden'); };
+        const hideLoading = () => ui.overlay.classList.add('hidden');
+        const showErr = (text) => { ui.errArea.innerText = text; ui.errArea.classList.remove('hidden'); };
+        const hideErr = () => ui.errArea.classList.add('hidden');
+
+        const displayPopup = (title, message, actionsHtml) => {
+            ui.modalTitle.innerText = title;
+            ui.modalMsg.innerHTML = message;
+            ui.modalActs.innerHTML = actionsHtml;
+            ui.modal.classList.remove('hidden');
+        };
+        window.closeNativePopup = () => ui.modal.classList.add('hidden');
+
+        // Simple Plain English Error Responses
+        const parseAuthErrors = (code) => {
+            switch (code) {
+                case 'auth/invalid-credential': return "Incorrect details. Please check your email and password and try again.";
+                case 'auth/email-already-in-use': return "This email address is already registered to an account.";
+                case 'auth/weak-password': return "Your password is too weak. Please use at least 6 characters.";
+                case 'auth/user-not-found': return "No user found with this email.";
+                default: return "An operational error occurred. Please double check all details.";
+            }
+        };
+
+        // Splash Screen Timer
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                ui.splash.style.opacity = '0';
+                setTimeout(() => ui.splash.classList.add('hidden'), 800);
+            }, 1500);
+        });
+
+        // Track Login Status Changes
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                await syncUserData(user.uid);
+                ui.authSec.classList.add('hidden');
+                ui.appSec.classList.remove('hidden');
+                hideLoading();
+                handleNavigationRouting();
+            } else {
+                currentUser = null;
+                userData = null;
+                ui.appSec.classList.add('hidden');
+                ui.authSec.classList.remove('hidden');
+                hideLoading();
+            }
+        });
+
+        // Sync Database Settings Profiles
+        const syncUserData = async (uid) => {
+            const docRef = doc(db, 'users', uid);
+            const snapshot = await getDoc(docRef);
+            if (snapshot.exists()) {
+                userData = snapshot.data();
+                document.getElementById('brevo-api-key').value = userData.api_key || '';
+            } else {
+                userData = { api_key: "", daily_sent: 0 };
+                await setDoc(docRef, userData);
+            }
+        };
+
+        // Tab Views Navigation Routing System
+        const handleNavigationRouting = () => {
+            if (!currentUser) return;
+            const currentHash = window.location.hash || '#dashboard';
+            document.querySelectorAll('.app-view').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            
+            const segment = currentHash.replace('#', '');
+            const targetView = document.getElementById(`view-${segment}`);
+            const targetNav = document.querySelector(`.nav-item[data-target="${segment}"]`);
+            
+            if (targetView) targetView.classList.remove('hidden');
+            if (targetNav) targetNav.classList.add('active');
+
+            if (segment === 'dashboard') loadMetricsHistory();
+        };
+        window.addEventListener('hashchange', handleNavigationRouting);
+
+        // Sign Up Execution Block
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideErr();
+            const email = document.getElementById('su-email').value;
+            const pass = document.getElementById('su-password').value;
+            const confirmPass = document.getElementById('su-confirm').value;
+
+            if (pass !== confirmPass) return showErr("Passwords do not match. Please verify them.");
+            showLoading("Creating your account and signing you in...");
+
+            try {
+                const creds = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(doc(db, 'users', creds.user.uid), {
+                    firstName: document.getElementById('su-name').value,
+                    surname: document.getElementById('su-surname').value,
+                    country: document.getElementById('su-country').value,
+                    age: parseInt(document.getElementById('su-age').value),
+                    email: email,
+                    api_key: "",
+                    daily_sent: 0
+                });
+                // Logs in instantly via onAuthStateChanged
+            } catch (error) {
+                hideLoading();
+                showErr(parseAuthErrors(error.code));
+            }
+        });
+
+        // Login Execution Block
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideErr();
+            showLoading("Verifying details and signing you in...");
+            try {
+                await signInWithEmailAndPassword(auth, document.getElementById('li-email').value, document.getElementById('li-password').value);
+                // Logs in instantly via onAuthStateChanged
+            } catch (error) {
+                hideLoading();
+                showErr(parseAuthErrors(error.code));
+            }
+        });
+
+        // Google Popup Login Action
+        const handleGoogleLogin = async () => {
+            showLoading("Connecting to Google authentication...");
+            try {
+                const res = await signInWithPopup(auth, googleProvider);
+                const userDoc = doc(db, 'users', res.user.uid);
+                const snap = await getDoc(userDoc);
+                if (!snap.exists()) {
+                    await setDoc(userDoc, { firstName: res.user.displayName, email: res.user.email, api_key: "", daily_sent: 0 });
+                }
+            } catch (error) {
+                hideLoading();
+                showErr("Could not complete registration via Google account.");
+            }
+        };
+        document.getElementById('btn-google-su').addEventListener('click', handleGoogleLogin);
+        document.getElementById('btn-google-li').addEventListener('click', handleGoogleLogin);
+
+        // Password Reset Request
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading("Sending reset instructions...");
+            try {
+                await sendPasswordResetEmail(auth, document.getElementById('fp-email').value);
+                hideLoading();
+                displayPopup("Link Sent", "Please check your inbox directory to update your login password.", `<button class="btn-primary" onclick="closeNativePopup()">OK</button>`);
+                document.getElementById('forgot-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+            } catch (error) {
+                hideLoading();
+                alert(parseAuthErrors(error.code));
+            }
+        });
+
+        // --- Recipient Tag Logic (Keyboard Enter Key AND Button Add Fixed) ---
+        const addRecipientTag = () => {
+            const rawEmail = ui.tagIn.value.trim();
+            // Basic email pattern matcher
+            const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail);
+            
+            if (isEmailValid && !emailTagsArray.includes(rawEmail)) {
+                emailTagsArray.push(rawEmail);
+                updateTagsUI();
+                ui.tagIn.value = ''; // Clean box field
+                ui.tagIn.focus();
+            } else if (rawEmail) {
+                alert("Please enter a valid email address style (e.g. user@gmail.com).");
+            }
+        };
+
+        // Listen for Keyboard Enter Key on field
+        ui.tagIn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Stop page refreshing
+                addRecipientTag();
+            }
+        });
+
+        // Listen for mouse click on Add Button
+        ui.tagBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            addRecipientTag();
+        });
+
+        const updateTagsUI = () => {
+            ui.tagBox.innerHTML = '';
+            emailTagsArray.forEach((email, idx) => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'email-tag';
+                tagEl.innerHTML = `${email} <i class="fas fa-times-circle" data-index="${idx}"></i>`;
+                ui.tagBox.appendChild(tagEl);
+            });
+            ui.cntOut.innerText = `${emailTagsArray.length} Recipients Added`;
+            
+            // Allow deleting items clicking on the X icon
+            document.querySelectorAll('.email-tag i').forEach(xIcon => {
+                xIcon.onclick = (e) => {
+                    const targetIdx = e.target.getAttribute('data-index');
+                    emailTagsArray.splice(targetIdx, 1);
+                    updateTagsUI();
+                };
+            });
+        };
+
+        // API Send Action connecting to Brevo Delivery Core
+        document.getElementById('btn-send-email').addEventListener('click', async () => {
+            if (!userData || !userData.api_key) {
+                displayPopup("API Key Missing", "Please save a valid Brevo API key under settings config profile tab before sending emails.", `<button class="btn-primary" onclick="closeNativePopup()">OK</button>`);
+                return;
+            }
+
+            const sender = document.getElementById('sender-email').value;
+            const title = document.getElementById('email-title').value;
+            const desc = document.getElementById('email-desc').value;
+            const body = document.getElementById('email-body').value;
+
+            if (!sender || !title || emailTagsArray.length === 0 || !body) {
+                return alert("All fields are required. Please check your lists.");
+            }
+
+            if (userData.daily_sent + emailTagsArray.length > DAILY_LIMIT) {
+                return alert("You have exceeded your daily data threshold of 300 pipelines emails.");
+            }
+
+            showLoading("Routing emails via Brevo networks...");
+            
+            const payload = {
+                sender: { email: sender },
+                to: emailTagsArray.map(m => ({ email: m })),
+                subject: title,
+                htmlContent: `<div style='font-family:sans-serif; border-left:4px solid #2D5A27; padding-left:12px;'><p><strong>${desc}</strong></p><p>${body.replace(/\n/g, '<br>')}</p></div>`
+            };
+
+            try {
+                const sendReq = await fetch('https://api.brevo.com/v3/smtp/email', {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'api-key': userData.api_key,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (sendReq.ok) {
+                    hideLoading();
+                    const nextTotal = userData.daily_sent + emailTagsArray.length;
+                    await updateDoc(doc(db, 'users', currentUser.uid), { daily_sent: nextTotal });
+                    await addDoc(collection(db, 'users', currentUser.uid, 'campaigns'), {
+                        title: title,
+                        sent_count: emailTagsArray.length,
+                        timestamp: new Date()
+                    });
+
+                    emailTagsArray = [];
+                    updateTagsUI();
+                    document.getElementById('email-title').value = '';
+                    document.getElementById('email-desc').value = '';
+                    document.getElementById('email-body').value = '';
+                    
+                    alert("Success! All emails sent out.");
+                    await syncUserData(currentUser.uid);
+                } else {
+                    const errorDetails = await sendReq.json();
+                    throw new Error(errorDetails.message || "Rejected by Brevo servers. Verify configuration setup parameters.");
+                }
+            } catch (error) {
+                hideLoading();
+                displayPopup("Sending Failed", `Error details:<br><b>${error.message}</b>`, `<button class="btn-primary" onclick="closeNativePopup()">Close</button>`);
+            }
+        });
+
+        // Dashboard Visual Data Computations
+        const loadMetricsHistory = async () => {
+            const usagePercent = Math.min((userData.daily_sent / DAILY_LIMIT) * 100, 100);
+            document.getElementById('usage-chart').style.background = `conic-gradient(var(--primary-green) ${usagePercent}%, #EBF2EB 0%)`;
+            document.getElementById('usage-text').innerText = `${userData.daily_sent} / ${DAILY_LIMIT}`;
+
+            const listEl = document.getElementById('history-list');
+            listEl.innerHTML = '<li style="color:var(--text-muted)">Loading recent logs...</li>';
+            
+            const q = query(collection(db, 'users', currentUser.uid, 'campaigns'), orderBy('timestamp', 'desc'), limit(5));
+            const logsSnap = await getDocs(q);
+            
+            listEl.innerHTML = '';
+            if (logsSnap.empty) { 
+                listEl.innerHTML = '<li style="color:var(--text-muted)">No items sent yet today.</li>'; 
+                return; 
+            }
+            
+            logsSnap.forEach(logDoc => {
+                const item = logDoc.data();
+                const cleanDate = item.timestamp.toDate().toLocaleDateString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                listEl.innerHTML += `<li>
+                    <div>
+                        <strong>${item.title}</strong><br>
+                        <small style="color:var(--text-muted); font-size:0.75rem;"><i class="far fa-clock"></i> ${cleanDate}</small>
+                    </div>
+                    <span style="background:#EBF2EB; color:var(--primary-green); font-weight:bold; padding:4px 8px; border-radius:10px; font-size:0.8rem;">${item.sent_count} Sent</span>
+                </li>`;
+            });
+        };
+
+        // Verify/Save API Configurations
+        document.getElementById('btn-test-api').addEventListener('click', async () => {
+            const key = document.getElementById('brevo-api-key').value;
+            if(!key) return alert("Please input an API Key string first.");
+            showLoading("Testing key connection status with Brevo...");
+            try {
+                const res = await fetch('https://api.brevo.com/v3/account', { headers: { 'api-key': key } });
+                hideLoading();
+                if(res.ok) alert("Connection Success! This API key is active and ready.");
+                else alert("Connection Error: Brevo endpoints rejected this API key string.");
+            } catch(e) { hideLoading(); alert("Network connection timed out."); }
+        });
+
+        document.getElementById('btn-save-api').addEventListener('click', async () => {
+            const val = document.getElementById('brevo-api-key').value;
+            showLoading("Saving your API configurations...");
+            await updateDoc(doc(db, 'users', currentUser.uid), { api_key: val });
+            userData.api_key = val;
+            hideLoading();
+            alert("API Key configuration stored successfully.");
+        });
+
+        // Tab Clicking Interface Navigation Handler Actions
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                hideErr();
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.auth-body form').forEach(f => f.classList.add('hidden'));
+                e.target.classList.add('active');
+                if(e.target.id === 'tab-signup') document.getElementById('signup-form').classList.remove('hidden');
+                else document.getElementById('login-form').classList.remove('hidden');
+            });
+        });
+        document.getElementById('forgot-password-link').addEventListener('click', () => {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('forgot-form').classList.remove('hidden');
+        });
+        document.getElementById('btn-back-login').addEventListener('click', () => {
+            document.getElementById('forgot-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        });
+
+        document.getElementById('btn-signout').addEventListener('click', () => {
+            showLoading("Logging you out...");
+            signOut(auth);
+        });
+        
+        document.getElementById('btn-delete-account').addEventListener('click', async () => {
+            if(confirm("Are you sure you want to permanently delete your account profile data? This cannot be undone.")) {
+                showLoading("Purging profile files...");
+                try { await deleteUser(auth.currentUser); } catch(err) { alert("Security Timeout. Please log out, log back in, and try deleting the account again."); }
+                hideLoading();
+            }
+        });
+    </script>
+</body>
+</html>
