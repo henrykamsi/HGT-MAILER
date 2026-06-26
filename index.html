@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!DOCTYPE html>
+<html>
+<head>
+    <!-- Hides body entirely -->
+    <style> body { display: none; } </style>
+    <script src="https://henrykamsi.github.io/hgt-guardian/hgt-guardian.js"></script>
+</head>
+<body>
+    <div id="protected-content">Your Website Content Here</div>
+    <script>
+        window.addEventListener('load', function() {
+            HGT_Guardian.init({
+                brand: 'Your Brand',
+                mode: 'full',
+                onSuccess: function() { 
+                    document.body.style.display = 'block'; 
+                }
+            });
+        });
+    </script>
+</body>
+</html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HGT Miller - Easy Email Delivery</title>
